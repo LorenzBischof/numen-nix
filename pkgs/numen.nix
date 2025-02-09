@@ -1,20 +1,21 @@
-{ fetchFromSourcehut
-, stdenv
-, buildGo123Module
-, makeWrapper
-, scdoc
-, dotool
-, vosk-bin
-, vosk-model-small-en-us
-, lib
-, alsa-utils
-, libxkbcommon
-, gnused
-, gawk
-, coreutils
-, libnotify
-, dmenu
-, procps
+{
+  fetchFromSourcehut,
+  stdenv,
+  buildGo123Module,
+  makeWrapper,
+  scdoc,
+  dotool,
+  vosk-bin,
+  vosk-model-small-en-us,
+  lib,
+  alsa-utils,
+  libxkbcommon,
+  gnused,
+  gawk,
+  coreutils,
+  libnotify,
+  dmenu,
+  procps,
 }:
 buildGo123Module rec {
   pname = "numen";
@@ -30,7 +31,10 @@ buildGo123Module rec {
     export CGO_CFLAGS="-I${vosk-bin}/include"
     export CGO_LDFLAGS="-L${vosk-bin}/lib"
   '';
-  nativeBuildInputs = [ makeWrapper scdoc ];
+  nativeBuildInputs = [
+    makeWrapper
+    scdoc
+  ];
   ldflags = [
     "-X main.Version=${version}"
     "-X main.DefaultModelPackage=vosk-model-small-en-us"
@@ -63,9 +67,23 @@ buildGo123Module rec {
   '';
   postFixup = ''
     wrapProgram $out/bin/numen \
-      --prefix PATH : ${lib.makeBinPath [ dotool alsa-utils coreutils procps gawk libnotify dmenu gnused ]} \
+      --prefix PATH : ${
+        lib.makeBinPath [
+          dotool
+          alsa-utils
+          coreutils
+          procps
+          gawk
+          libnotify
+          dmenu
+          gnused
+        ]
+      } \
       --prefix LD_LIBRARY_PATH : ${
-        lib.makeLibraryPath [ libxkbcommon stdenv.cc.cc.lib ]
+        lib.makeLibraryPath [
+          libxkbcommon
+          stdenv.cc.cc.lib
+        ]
       }
     wrapProgram $out/bin/numenc \
       --prefix PATH : ${lib.makeBinPath [ coreutils ]}
