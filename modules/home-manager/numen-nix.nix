@@ -121,12 +121,26 @@ in
           echo "load $phrases" | numenc
         '';
       };
+      numen-sleep = pkgs.writeShellApplication {
+        name = "numen-sleep";
+        runtimeInputs = with pkgs; [
+          libnotify
+          coreutils
+        ];
+        text = ''
+          statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
+          notify-send "Numen paused"
+          touch "$statedir/paused"
+          echo "load" | numenc
+        '';
+      };
 
     in
     lib.mkIf cfg.enable {
       home.packages = [
         cfg.package
         numen-wake
+        numen-sleep
         numen-subtitles
       ];
       systemd.user.services.numen =
