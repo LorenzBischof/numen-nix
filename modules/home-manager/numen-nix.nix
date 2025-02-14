@@ -77,40 +77,35 @@ in
     let
       numen-subtitles = pkgs.writeShellApplication {
         name = "numen-subtitles";
-        runtimeInputs = [
-          pkgs.entr
+        runtimeInputs = with pkgs; [
+          libnotify
+          coreutils
+          inotify-tools
+          gnugrep
         ];
         text = ''
           statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
-          echo "$statedir/phrase" | entr -npa ${numen-subtitles-notify}/bin/numen-subtitles-notify
-        '';
-      };
-      numen-subtitles-notify = pkgs.writeShellApplication {
-        name = "numen-subtitles-notify";
-        runtimeInputs = [
-          pkgs.libnotify
-          pkgs.coreutils
-        ];
-        text = ''
-          statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
-          phrasefile="$statedir/phrase"
-          bufferfile="$statedir/phrasebuffer"
+          phrasefile="$statedir/phraselog"
+          linefile="$statedir/line"
 
-          phrase="$(cat "$phrasefile")"
+          inotifywait -m "$phrasefile" -e modify | while read -r _ _ _; do
+            CURRENT_TIME="$(date +%s)"
+            LAST_NOTIFICATION_TIME="$(date -r "$linefile" +%s || echo 0)"
+            if [[ $((CURRENT_TIME - LAST_NOTIFICATION_TIME)) -le 5 ]]; then
+              line="$(cat "$linefile")"
+              echo -n "$line" > "$linefile"
+            else
+              line="$(wc -l "$phrasefile" | cut -d' ' -f1)"
+              echo -n "$line" > "$linefile"
+            fi
 
-          NOTIFICATION_ID=9999
-          CURRENT_TIME="$(date +%s)"
-          LAST_NOTIFICATION_TIME="$(date -r "$bufferfile" +%s || echo 0)"
+            phrase="$(tail -n +"$line" "$phrasefile" | grep -v huh | tr '\n' ' ' || true)"
+            [ -z "$phrase" ] && continue
 
-          if [[ $((CURRENT_TIME - LAST_NOTIFICATION_TIME)) -le 5 ]]; then
-              # If last phrase was within 5 seconds, append to buffer
-              printf ' %s' "$phrase" >> "$bufferfile"
-              notify-send -r "$NOTIFICATION_ID" "$(cat "$bufferfile")"
-          else
-              # Clear buffer and start fresh
-              printf '%s' "$phrase" > "$bufferfile"
-              notify-send -r "$NOTIFICATION_ID" "$phrase"
-          fi
+            NOTIFICATION_ID=9999
+
+            notify-send -r "$NOTIFICATION_ID" "$phrase"
+          done
         '';
       };
       numen-wake = pkgs.writeShellApplication {
@@ -151,7 +146,7 @@ in
                 phrases="${paused}"
               fi
               # shellcheck disable=SC2086
-              ${cfg.package}/bin/numen ${cfg.extraArgs} $phrases
+              ${cfg.package}/bin/numen ${cfg.extraArgs} ${lib.optionalString cfg.subtitles.enable "--phraselog $statedir/phraselog"} $phrases
             '';
           };
         in
