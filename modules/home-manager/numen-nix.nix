@@ -87,6 +87,9 @@ in
           statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
           phrasefile="$statedir/phraselog"
           linefile="$statedir/line"
+          lastline="$statedir/lastline"
+
+          [ -f "$lastline" ] || echo -n > "$lastline"
 
           inotifywait -m "$phrasefile" -e modify | while read -r _ _ _; do
             CURRENT_TIME="$(date +%s)"
@@ -94,8 +97,10 @@ in
             if [[ $((CURRENT_TIME - LAST_NOTIFICATION_TIME)) -le 5 ]]; then
               line="$(cat "$linefile")"
               echo -n "$line" > "$linefile"
+              wc -l "$phrasefile" | cut -d' ' -f1 > "$lastline"
             else
-              line="$(wc -l "$phrasefile" | cut -d' ' -f1)"
+              line="$(cat "$lastline")" # We cannot count the lines here, because multiple lines are added at the same time and then we miss words
+              line=$((line + 1)) # We counted the lines before the current word was added
               echo -n "$line" > "$linefile"
             fi
 
