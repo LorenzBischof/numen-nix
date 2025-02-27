@@ -54,6 +54,7 @@ services.numen.enable = true;
 - `package` (package): The numen package to use. Default: `numen` from flake
 - `model` (path): Path to the Vosk model. Default: Uses `vosk-model-small-en-us`
 - `phrases` (list of paths): Custom phrase files to load. Default: `[]` (uses default phrases or `~/.config/numen/phrases`)
+- `pausedPhrase` (path): This phrase file is loaded when Numen is paused. Default: `please wake up` (see implementation to configure)
 - `extraArgs` (string): Additional command-line arguments for numen. Default: `""`
 - `xkbLayout` (string): XKB keyboard layout for dotool. Default: `"en"`
 - `xkbVariant` (string): XKB keyboard variant for dotool. Default: `""`

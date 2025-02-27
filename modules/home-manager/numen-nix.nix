@@ -47,6 +47,20 @@ in
       '';
     };
 
+    pausedPhrase = lib.mkOption {
+      type = lib.types.path;
+      default = pkgs.writeText "numen-paused" ''
+        please: set a echo 1
+        wake: eval [ "$a" ] && echo set b echo 1
+        up: run [ "$b" ] && numen-wake
+        <complete>: set a : \
+                    set b :
+      '';
+      description = ''
+        This phrase file is loaded when Numen is paused. See https://lists.sr.ht/~geb/numen/%3C55fe1488feeb1cee2627d61b9b7e16a74ef5fca0.camel@dalibo.com%3E
+      '';
+    };
+
     extraArgs = lib.mkOption {
       type = lib.types.singleLineStr;
       default = "";
@@ -99,10 +113,17 @@ in
           fi
 
           inotifywait -m "$phrasefile" -e modify | while read -r _ _ _; do
+            linecount="$(wc -l "$phrasefile" | cut -d' ' -f1)"
+
+            if [ -f "$statedir/paused" ]; then
+              echo -n "$linecount" > "$linefile"
+              echo -n "$linecount" > "$linecountfile"
+              continue
+            fi
+
             CURRENT_TIME="$(date +%s)"
             LAST_NOTIFICATION_TIME="$(date -r "$linecountfile" +%s || echo 0)"
             
-            linecount="$(wc -l "$phrasefile" | cut -d' ' -f1)"
             line="$(cat "$linefile")"
 
             # Reset line counter if numen was restarted
@@ -153,7 +174,7 @@ in
           statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
           notify-send "Numen paused"
           touch "$statedir/paused"
-          echo "load" | numenc
+          echo "load ${cfg.pausedPhrase}" | numenc
         '';
       };
 
@@ -167,19 +188,13 @@ in
       ];
       systemd.user.services.numen =
         let
-          # We need a separate file, because if we pass nothing, the default phrases are loaded
-          # We cannot wake numen, because it triggers too often.
-          paused = pkgs.writeText "numen-paused" ''
-            talon wake: run notify-send "Numen not listening" \
-                        load
-          '';
           numen-wrapper = pkgs.writeShellApplication {
             name = "numen-wrapper";
             text = ''
               statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
               phrases="${lib.strings.concatStringsSep " " cfg.phrases}"
               if [ -e "$statedir/paused" ]; then
-                phrases="${paused}"
+                phrases="${cfg.pausedPhrase}"
               fi
               # shellcheck disable=SC2086
               ${cfg.package}/bin/numen ${cfg.extraArgs} ${lib.optionalString cfg.subtitles.enable "--phraselog $statedir/phraselog"} $phrases
@@ -198,6 +213,13 @@ in
             "DOTOOL_XKB_VARIANT=${cfg.xkbVariant}"
             "NUMEN_MODEL=${cfg.model}"
             "NUMEN_SCRIPTS_DIR=${cfg.package}/etc/numen/scripts"
+            "PATH=${
+              lib.makeBinPath [
+                cfg.package
+                numen-wake
+                numen-sleep
+              ]
+            }"
           ];
           Service.ExecStart = "${numen-wrapper}/bin/numen-wrapper";
         };
