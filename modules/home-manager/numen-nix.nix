@@ -87,22 +87,39 @@ in
           statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
           phrasefile="$statedir/phraselog"
           linefile="$statedir/line"
-          lastline="$statedir/lastline"
-
-          [ -f "$lastline" ] || echo -n > "$lastline"
+          linecountfile="$statedir/linecount"
+            
+          touch "$phrasefile" # make sure it exists
+          linecount="$(wc -l "$phrasefile" | cut -d' ' -f1)"
+          if [ ! -f "$linefile" ]; then
+            echo -n "$linecount" > "$linefile"
+          fi
+          if [ ! -f "$linecountfile" ]; then
+            echo -n "$linecount" > "$linecountfile"
+          fi
 
           inotifywait -m "$phrasefile" -e modify | while read -r _ _ _; do
             CURRENT_TIME="$(date +%s)"
-            LAST_NOTIFICATION_TIME="$(date -r "$linefile" +%s || echo 0)"
-            if [[ $((CURRENT_TIME - LAST_NOTIFICATION_TIME)) -le 5 ]]; then
-              line="$(cat "$linefile")"
+            LAST_NOTIFICATION_TIME="$(date -r "$linecountfile" +%s || echo 0)"
+            
+            linecount="$(wc -l "$phrasefile" | cut -d' ' -f1)"
+            line="$(cat "$linefile")"
+
+            # Reset line counter if numen was restarted
+            if [ "$linecount" -lt "$line" ]; then
+              line="0"
               echo -n "$line" > "$linefile"
-              wc -l "$phrasefile" | cut -d' ' -f1 > "$lastline"
-            else
-              line="$(cat "$lastline")" # We cannot count the lines here, because multiple lines are added at the same time and then we miss words
+              echo -n "$line" > "$linecountfile"
+            fi
+            
+            if [[ $((CURRENT_TIME - LAST_NOTIFICATION_TIME)) -gt 5 ]]; then
+              # We need to use the value from the last run, otherwise it does not work correctly
+              # when multiple phrases are written to the log at the same time.
+              line="$(cat "$linecountfile")"
               line=$((line + 1)) # We counted the lines before the current word was added
               echo -n "$line" > "$linefile"
             fi
+            echo -n "$linecount" > "$linecountfile"
 
             phrase="$(tail -n +"$line" "$phrasefile" | grep -v huh | tr '\n' ' ' || true)"
             [ -z "$phrase" ] && continue
