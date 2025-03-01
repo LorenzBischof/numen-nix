@@ -61,6 +61,20 @@ in
       '';
     };
 
+    updateCommand = lib.mkOption {
+      type = lib.types.nullOr lib.types.package;
+      default = null;
+      description = ''
+        A command to run after pausing or resuming Numen
+      '';
+      example = ''
+        pkgs.writeShellApplication {
+          name = "reload-i3status";
+          text = "pkill -SIGRTMIN+4 i3status-rs";
+        };
+      '';
+    };
+
     extraArgs = lib.mkOption {
       type = lib.types.singleLineStr;
       default = "";
@@ -162,6 +176,7 @@ in
           fi
           rm -f "$statedir/paused"
           echo "load $phrases" | numenc
+          ${lib.optionalString (cfg.updateCommand != null) lib.getExe cfg.updateCommand}
         '';
       };
       numen-sleep = pkgs.writeShellApplication {
@@ -175,6 +190,7 @@ in
           notify-send "Numen paused"
           touch "$statedir/paused"
           echo "load ${cfg.pausedPhrase}" | numenc
+          ${lib.optionalString (cfg.updateCommand != null) lib.getExe cfg.updateCommand}
         '';
       };
 
