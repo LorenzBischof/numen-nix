@@ -59,6 +59,7 @@ services.numen.enable = true;
 - `xkbLayout` (string): XKB keyboard layout for dotool. Default: `"en"`
 - `xkbVariant` (string): XKB keyboard variant for dotool. Default: `""`
 - `subtitles.enable` (boolean): Enable on-screen display of recognized phrases. Default: `false`
+- `updateCommand` (package): Script that is run after pausing or resuming Numen. Default: `null`
 
 ### Example Configuration
 
@@ -98,4 +99,41 @@ else
   echo load $PWD/phrases/* | numenc
   echo "Reloaded phrases."
 fi
+```
+
+### i3status-rust
+
+```nix
+  services.numen = {
+    enable = true;
+    updateCommand = pkgs.writeShellApplication {
+      name = "reload-i3status";
+      text = "pkill -SIGRTMIN+4 i3status-rs";
+    };
+  };
+  programs.i3status-rust = {
+    enable = true;
+    bars.default = {
+      theme = "native";
+      icons = "awesome6";
+      blocks = [
+        {
+          block = "custom";
+          signal = 4;
+          command = ''
+            if ! systemctl --user is-active numen > /dev/null; then 
+                echo 
+            else 
+              if [ -f "$HOME/.local/state/numen/paused" ]; then 
+                echo 
+              else 
+                echo 
+              fi; 
+            fi
+          '';
+          interval = 5;
+        }
+      ];
+    };
+  };
 ```
