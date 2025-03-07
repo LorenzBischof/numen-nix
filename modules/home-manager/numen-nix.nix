@@ -50,14 +50,11 @@ in
     pausedPhrase = lib.mkOption {
       type = lib.types.path;
       default = pkgs.writeText "numen-paused" ''
-        please: set a echo 1
-        wake: eval [ "$a" ] && echo set b echo 1
-        up: run [ "$b" ] && numen-wake
-        <complete>: set a : \
-                    set b :
+        wake up: run notify-send "Numen not listening" \
+          load
       '';
       description = ''
-        This phrase file is loaded when Numen is paused. See https://lists.sr.ht/~geb/numen/%3C55fe1488feeb1cee2627d61b9b7e16a74ef5fca0.camel@dalibo.com%3E
+        This phrase file is loaded when Numen is paused. Sadly this does not currently work as expected. See https://lists.sr.ht/~geb/numen/%3C55fe1488feeb1cee2627d61b9b7e16a74ef5fca0.camel@dalibo.com%3E
       '';
     };
 
@@ -176,6 +173,7 @@ in
           fi
           rm -f "$statedir/paused"
           echo "load $phrases" | numenc
+          notify-send "Numen resumed"
           ${lib.optionalString (cfg.updateCommand != null) lib.getExe cfg.updateCommand}
         '';
       };
@@ -187,9 +185,9 @@ in
         ];
         text = ''
           statedir="''${XDG_STATE_HOME:-$HOME/.local/state}/numen"
-          notify-send "Numen paused"
           touch "$statedir/paused"
           echo "load ${cfg.pausedPhrase}" | numenc
+          notify-send "Numen paused"
           ${lib.optionalString (cfg.updateCommand != null) lib.getExe cfg.updateCommand}
         '';
       };
