@@ -1,7 +1,7 @@
 {
   fetchFromSourcehut,
   stdenv,
-  buildGo123Module,
+  buildGoModule,
   makeWrapper,
   scdoc,
   dotool,
@@ -19,7 +19,7 @@
   installShellFiles,
 }:
 
-buildGo123Module rec {
+buildGoModule rec {
   pname = "numen";
   version = "0.7";
 
