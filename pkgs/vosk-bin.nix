@@ -1,7 +1,6 @@
 {
   stdenv,
   fetchzip,
-  system,
 }:
 let
   getSource =
@@ -30,7 +29,7 @@ in
 stdenv.mkDerivation rec {
   name = "vosk-bin";
   version = "0.3.45";
-  src = fetchzip (getSource system version);
+  src = fetchzip (getSource stdenv.hostPlatform.system version);
 
   installPhase = ''
     runHook preInstall
