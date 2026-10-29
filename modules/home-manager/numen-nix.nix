@@ -174,7 +174,7 @@ in
           rm -f "$statedir/paused"
           echo "load $phrases" | numenc
           notify-send "Numen resumed"
-          ${lib.optionalString (cfg.updateCommand != null) lib.getExe cfg.updateCommand}
+          ${lib.optionalString (cfg.updateCommand != null) (lib.getExe cfg.updateCommand)}
         '';
       };
       numen-sleep = pkgs.writeShellApplication {
@@ -188,7 +188,7 @@ in
           touch "$statedir/paused"
           echo "load ${cfg.pausedPhrase}" | numenc
           notify-send "Numen paused"
-          ${lib.optionalString (cfg.updateCommand != null) lib.getExe cfg.updateCommand}
+          ${lib.optionalString (cfg.updateCommand != null) (lib.getExe cfg.updateCommand)}
         '';
       };
 
