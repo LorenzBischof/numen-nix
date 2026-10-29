@@ -1,6 +1,6 @@
 # Numen Nix
 
-A nix flake that builds [numen](https://git.sr.ht/~geb/numen), a voice control system.
+Nix packages and a Home Manager module for [numen](https://git.sr.ht/~geb/numen), a voice control system. Works with and without flakes.
 
 ## Prerequisites
 
@@ -20,6 +20,8 @@ users.users.<user> = {
 The module provides a systemd service to run numen and configure various aspects of its operation.
 
 ### Basic Usage
+
+#### With flakes
 
 Add this repository as an input:
 ```nix
@@ -42,6 +44,31 @@ Add this repository as an input:
   };
 }
 ```
+#### Without flakes
+
+Fetch the repository (with `fetchTarball`, [npins](https://github.com/andir/npins), niv, …) and import the module:
+
+```nix
+let
+  numen-nix = fetchTarball "https://github.com/LorenzBischof/numen-nix/archive/main.tar.gz";
+in
+{
+  imports = [ "${numen-nix}/modules/home-manager/numen-nix.nix" ];
+}
+```
+
+The packages are available through `default.nix`, built against your own nixpkgs:
+
+```nix
+(import numen-nix { inherit pkgs; }).numen
+# or as an overlay
+nixpkgs.overlays = [ (import numen-nix { }).overlay ];
+```
+
+From a checkout, `nix-build -A numen` works too.
+
+#### Enabling the service
+
 Add the following to your home-manager configuration:
 
 ```nix
@@ -51,7 +78,7 @@ services.numen.enable = true;
 ### Configuration Options
 
 - `enable` (boolean): Enable the numen service. Default: `false`
-- `package` (package): The numen package to use. Default: `numen` from flake
+- `package` (package): The numen package to use. Default: `numen` built with the `pkgs` of your Home Manager configuration
 - `model` (path): Path to the Vosk model. Default: Uses `vosk-model-small-en-us`
 - `phrases` (list of paths): Custom phrase files to load. Default: `[]` (uses default phrases or `~/.config/numen/phrases`)
 - `pausedPhrase` (path): This phrase file is loaded when Numen is paused. Currently not usable, because of false positives.

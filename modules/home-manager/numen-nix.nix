@@ -1,4 +1,3 @@
-{ numen, vosk-model-small-en-us }:
 {
   config,
   lib,
@@ -8,6 +7,7 @@
 
 let
   cfg = config.services.numen;
+  numenPkgs = import ../../default.nix { inherit pkgs; };
 in
 {
   options.services.numen = {
@@ -18,7 +18,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = numen;
+      default = numenPkgs.numen;
+      defaultText = lib.literalExpression "numen";
     };
 
     # models = mkOption {
@@ -32,7 +33,8 @@ in
 
     model = lib.mkOption {
       type = lib.types.pathInStore;
-      default = "${vosk-model-small-en-us}/usr/share/vosk-models/small-en-us/";
+      default = "${numenPkgs.vosk-model-small-en-us}/usr/share/vosk-models/small-en-us/";
+      defaultText = lib.literalExpression ''"''${vosk-model-small-en-us}/usr/share/vosk-models/small-en-us/"'';
       example = "vosk-model-small-en-us";
       description = ''
         Vosk model to be loaded by numen.

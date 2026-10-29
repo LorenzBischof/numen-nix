@@ -6,25 +6,17 @@
   };
 
   outputs = { self, nixpkgs, }:
-    with import nixpkgs { system = "x86_64-linux"; };
     let
-      vosk-bin = pkgs.callPackage (import ./pkgs/vosk-bin.nix) { };
-      vosk-model-small-en-us =
-        pkgs.callPackage (import ./pkgs/vosk-model-small-en-us.nix) { };
-      numen = pkgs.callPackage (import ./pkgs/numen.nix) {
-        inherit vosk-bin vosk-model-small-en-us;
-      };
+      pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      numen-nix = import ./. { inherit pkgs; };
     in
     {
       packages.x86_64-linux = {
-        inherit vosk-bin vosk-model-small-en-us numen;
-        default = numen;
+        inherit (numen-nix) vosk-bin vosk-model-small-en-us numen;
+        default = numen-nix.numen;
       };
-      overlays.default = final: prev: {
-        inherit vosk-bin vosk-model-small-en-us numen;
-
-      };
-      homeManagerModules.numen-nix = (import ./modules/home-manager/numen-nix.nix) { inherit numen vosk-model-small-en-us; };
+      overlays.default = numen-nix.overlay;
+      homeManagerModules.numen-nix = numen-nix.homeManagerModule;
       homeManagerModule = self.homeManagerModules.numen-nix;
       formatter.x86_64-linux = pkgs.nixpkgs-fmt;
     };
