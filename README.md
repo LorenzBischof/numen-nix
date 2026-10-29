@@ -80,6 +80,7 @@ services.numen.enable = true;
 - `enable` (boolean): Enable the numen service. Default: `false`
 - `package` (package): The numen package to use. Default: `numen` built with the `pkgs` of your Home Manager configuration
 - `model` (path): Path to the Vosk model. Default: Uses `vosk-model-small-en-us`
+- `responsive` (boolean): Shorten the trailing silence after which a phrase is recognized, so commands run sooner (numen's "Extra Responsive Hack"). Default: `true`
 - `phrases` (list of paths): Custom phrase files to load. Default: `[]` (uses default phrases or `~/.config/numen/phrases`)
 - `pausedPhrase` (path): This phrase file is loaded when Numen is paused. Currently not usable, because of false positives.
 - `extraArgs` (string): Additional command-line arguments for numen. Default: `""`

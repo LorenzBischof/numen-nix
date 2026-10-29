@@ -8,6 +8,22 @@
 let
   cfg = config.services.numen;
   numenPkgs = import ../../default.nix { inherit pkgs; };
+  model =
+    if cfg.responsive then
+      pkgs.runCommand "numen-responsive-model" { } ''
+        cp -rs ${cfg.model} $out
+        chmod -R u+w $out
+        rm -f $out/conf/model.conf
+        mkdir -p $out/conf
+        cat ${cfg.model}/conf/model.conf > $out/conf/model.conf || true
+        cat >> $out/conf/model.conf <<EOF
+        --endpoint.rule2.min-trailing-silence=0.25
+        --endpoint.rule3.min-trailing-silence=0.25
+        --endpoint.rule4.min-trailing-silence=0.3
+        EOF
+      ''
+    else
+      cfg.model;
 in
 {
   options.services.numen = {
@@ -38,6 +54,15 @@ in
       example = "vosk-model-small-en-us";
       description = ''
         Vosk model to be loaded by numen.
+      '';
+    };
+
+    responsive = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Shorten the trailing silence after which a phrase is recognized, so commands
+        run sooner. Applies the "Extra Responsive Hack" from the numen README to the model.
       '';
     };
 
@@ -227,7 +252,7 @@ in
           Service.Environment = [
             "DOTOOL_XKB_LAYOUT=${cfg.xkbLayout}"
             "DOTOOL_XKB_VARIANT=${cfg.xkbVariant}"
-            "NUMEN_MODEL=${cfg.model}"
+            "NUMEN_MODEL=${model}"
             "NUMEN_SCRIPTS_DIR=${cfg.package}/etc/numen/scripts"
             "PATH=${
               lib.makeBinPath [
